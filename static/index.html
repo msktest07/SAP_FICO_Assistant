@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A grounded knowledge assistant for SAP Financial Accounting and Controlling.">
+  <title>SAP_FICO_ASSISTANT</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#assistant" data-route="assistant" aria-label="SAP_FICO_ASSISTANT home">
+        <span class="brand-mark">SF</span>
+        <span><strong>SAP_FICO_ASSISTANT</strong></span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <button class="nav-link active" data-route="assistant"><span>✦</span> Assistant</button>
+        <button class="nav-link" data-route="history"><span>◷</span> History</button>
+        <button class="nav-link" data-route="topics"><span>▦</span> Topic explorer</button>
+        <button class="nav-link" data-route="dashboard"><span>⌁</span> Dashboard</button>
+      </nav>
+      <div class="sidebar-note">
+        <span class="status-dot"></span>
+        <div><strong>Local knowledge online</strong><small>Curated SAP FICO topics</small></div>
+      </div>
+      <div class="profile"><span class="avatar">FI</span><div><strong>Finance User</strong><small>Consultant workspace</small></div></div>
+    </aside>
+
+    <div class="main-area">
+      <header class="topbar">
+        <button class="icon-button menu-button" id="menuButton" aria-label="Open navigation" aria-expanded="false">☰</button>
+        <div><p class="eyebrow">Enterprise knowledge workspace</p><h1 id="pageTitle">Ask the assistant</h1></div>
+        <div class="top-actions"><span class="environment">● LOCAL</span><button class="icon-button" id="themeButton" aria-label="Toggle dark mode">◐</button></div>
+      </header>
+
+      <main>
+        <section class="view active" id="assistantView" data-view="assistant">
+          <div class="hero">
+            <div>
+              <span class="tag">FI + CO KNOWLEDGE</span>
+              <h2>Turn SAP FICO questions into clear next steps.</h2>
+              <p>Ask about accounting processes, configuration concepts, transaction codes, integration, reporting, or period-end activities.</p>
+            </div>
+            <div class="hero-art" aria-hidden="true"><span>FI</span><i></i><span>CO</span></div>
+          </div>
+
+          <form class="question-card" id="questionForm" novalidate>
+            <label for="question">What do you need help with?</label>
+            <div class="question-wrap">
+              <textarea id="question" name="question" rows="4" maxlength="1000" placeholder="Example: What are the key steps for an automatic vendor payment run in F110?" required></textarea>
+              <span class="character-count"><b id="characterCount">0</b>/1000</span>
+            </div>
+            <p class="field-error" id="questionError" role="alert"></p>
+            <div class="context-grid">
+              <label>Module<select id="module" name="module"><option>All</option><option>FI</option><option>CO</option><option>FI/CO</option></select></label>
+              <label>Product<select id="product" name="product"><option>SAP S/4HANA</option><option>SAP ECC</option></select></label>
+              <label>Release<select id="release" name="release"><option>Current</option><option>2023</option><option>2022</option><option>1909</option><option>ECC 6.0</option></select></label>
+              <label>Country<select id="country" name="country"><option>Global</option><option>India</option><option>United States</option><option>United Kingdom</option><option>Germany</option></select></label>
+            </div>
+            <div class="form-actions"><p><span class="shield">✓</span> Answers use curated local knowledge and show assumptions.</p><button class="primary-button" type="submit" id="askButton"><span>Ask assistant</span><b>→</b></button></div>
+          </form>
+
+          <div class="suggestions">
+            <p>Try a common question</p>
+            <div class="chip-row">
+              <button data-question="Explain the steps for an automatic vendor payment run in F110">Automatic payments</button>
+              <button data-question="How do I perform cost center assessment and review the results?">Cost allocation</button>
+              <button data-question="What activities are required for FI and CO month-end closing?">Month-end close</button>
+              <button data-question="How does MM account determination integrate with FI and CO?">FI/MM integration</button>
+            </div>
+          </div>
+
+          <article class="answer-card hidden" id="answerCard" aria-live="polite">
+            <div class="answer-heading">
+              <div><span class="answer-icon">✦</span><div><p>Assistant response</p><h3 id="answerTopic"></h3></div></div>
+              <span class="confidence" id="confidence"></span>
+            </div>
+            <p class="answer-copy" id="answerCopy"></p>
+            <div id="stepsBlock"><h4>Recommended approach</h4><ol id="answerSteps"></ol></div>
+            <div class="transaction-block"><h4>Relevant transactions / apps</h4><div class="transaction-list" id="transactions"></div></div>
+            <div class="followup-block"><h4>Good follow-up questions</h4><div class="chip-row" id="followupChips"></div></div>
+            <div class="source-box"><span>▤</span><div><strong>Knowledge source</strong><p id="answerSource"></p></div></div>
+            <p class="notice" id="answerNotice"></p>
+            <div class="answer-footer">
+              <span>Was this answer useful?</span>
+              <div><button class="feedback-button" data-rating="helpful">👍 Yes</button><button class="feedback-button" data-rating="not_helpful">👎 Not quite</button></div>
+            </div>
+          </article>
+        </section>
+
+        <section class="view" id="historyView" data-view="history">
+          <div class="section-heading"><div><p class="eyebrow">Saved automatically</p><h2>Question history</h2><p>Review your recent SAP FICO questions and their context.</p></div><button class="secondary-button" id="refreshHistory">↻ Refresh</button></div>
+          <div class="filter-row"><input id="historySearch" type="search" placeholder="Search questions or topics..." aria-label="Search history"><select id="historyModule" aria-label="Filter by module"><option value="">All modules</option><option>FI</option><option>CO</option><option>FI/CO</option><option>FI-AA</option></select></div>
+          <div class="data-card">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Question</th><th>Topic</th><th>Context</th><th>Confidence</th><th>Feedback</th><th>Actions</th><th>Date</th></tr></thead>
+                <tbody id="historyBody"></tbody>
+              </table>
+            </div>
+            <div class="empty-state hidden" id="historyEmpty"><span>◷</span><h3>No matching questions</h3><p>Ask the assistant a question to build your history.</p></div>
+          </div>
+        </section>
+
+        <section class="view" id="topicsView" data-view="topics">
+          <div class="section-heading"><div><p class="eyebrow">Curated coverage</p><h2>Explore SAP FICO topics</h2><p>Browse the local knowledge currently available to the assistant.</p></div></div>
+          <div class="topic-grid" id="topicGrid"></div>
+        </section>
+
+        <section class="view" id="dashboardView" data-view="dashboard">
+          <div class="section-heading"><div><p class="eyebrow">Workspace activity</p><h2>Quality dashboard</h2><p>A quick view of usage, coverage, and user feedback.</p></div><button class="secondary-button" id="refreshDashboard">↻ Refresh</button></div>
+          <div class="metric-grid">
+            <article><span>Questions asked</span><strong id="questionMetric">0</strong><small>Stored locally</small></article>
+            <article><span>Helpful ratings</span><strong id="helpfulMetric">0</strong><small>Positive feedback</small></article>
+            <article><span>Knowledge topics</span><strong id="knowledgeMetric">0</strong><small>Curated areas</small></article>
+          </div>
+          <div class="dashboard-grid">
+            <article class="panel"><h3>Most discussed topics</h3><div id="popularTopics" class="bar-list"></div></article>
+            <article class="panel safety-panel"><span>✓</span><h3>Guidance-only mode</h3><p>The assistant does not connect to or change a live SAP system. Validate configuration in a non-production environment and follow organizational controls.</p></article>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="overlay" id="overlay"></div>
+
+  <dialog class="modal" id="editModal">
+    <form method="dialog" class="modal-card" id="editForm">
+      <h3>Edit saved question</h3>
+      <label>Question<textarea id="editQuestion" rows="4" maxlength="1000"></textarea></label>
+      <div class="context-grid">
+        <label>Module<select id="editModule"><option>All</option><option>FI</option><option>CO</option><option>FI/CO</option></select></label>
+        <label>Product<select id="editProduct"><option>SAP S/4HANA</option><option>SAP ECC</option></select></label>
+        <label>Release<select id="editRelease"><option>Current</option><option>2023</option><option>2022</option><option>1909</option><option>ECC 6.0</option></select></label>
+        <label>Country<select id="editCountry"><option>Global</option><option>India</option><option>United States</option><option>United Kingdom</option><option>Germany</option></select></label>
+      </div>
+      <div class="modal-actions"><button class="secondary-button" value="cancel">Cancel</button><button class="primary-button" id="saveEditButton" value="default"><span>Save changes</span><b>→</b></button></div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="feedbackModal">
+    <form method="dialog" class="modal-card" id="feedbackForm">
+      <h3>Edit feedback</h3>
+      <label>Rating<select id="feedbackRating"><option value="helpful">Helpful</option><option value="not_helpful">Not helpful</option></select></label>
+      <label>Comment<textarea id="feedbackComment" rows="4" maxlength="500" placeholder="Optional comment"></textarea></label>
+      <div class="modal-actions"><button class="secondary-button danger" id="deleteFeedbackButton" type="button">Delete feedback</button><button class="secondary-button" value="cancel">Cancel</button><button class="primary-button" id="saveFeedbackButton" value="default"><span>Save feedback</span><b>→</b></button></div>
+    </form>
+  </dialog>
+</body>
+</html>
