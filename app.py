@@ -290,7 +290,23 @@ def score_web_relevance(question: str, text: str) -> int:
     t_tokens = set(normalize(text))
     if not q_tokens or not t_tokens:
         return 0
-    return len(q_tokens.intersection(t_tokens))
+    score = len(q_tokens.intersection(t_tokens))
+    question_lower = (question or "").lower()
+    text_lower = (text or "").lower()
+
+    domain_pairs = [
+        ("s4hana", "s4hana"),
+        ("s/4hana", "s/4hana"),
+        ("sap fico", "sap fico"),
+        ("sap fico", "fico"),
+        ("fico", "fico"),
+        ("financial accounting", "financial accounting"),
+        ("controlling", "controlling"),
+    ]
+    for q_term, t_term in domain_pairs:
+        if q_term in question_lower and t_term in text_lower:
+            score += 1
+    return score
 
 
 def fetch_web_answer(question: str, module: str) -> str | None:
@@ -321,7 +337,15 @@ def fetch_web_answer(question: str, module: str) -> str | None:
                     candidates.append(item.strip())
             for candidate in candidates:
                 cleaned = summarize_web_text(candidate)
-                if score_web_relevance(question, cleaned) >= 2:
+                relevance = score_web_relevance(question, cleaned)
+                question_lower = (question or "").lower()
+                text_lower = (cleaned or "").lower()
+                has_domain_match = (
+                    ("s4hana" in question_lower and ("s/4hana" in text_lower or "s4hana" in text_lower or "hana" in text_lower))
+                    or ("sap fico" in question_lower and ("sap fico" in text_lower or "fico" in text_lower or "financial accounting" in text_lower or "controlling" in text_lower))
+                    or ("fico" in question_lower and ("fico" in text_lower or "financial accounting" in text_lower))
+                )
+                if relevance >= 1 or has_domain_match or len((question or "").split()) >= 4:
                     return cleaned
         except Exception:
             continue
@@ -343,10 +367,10 @@ def find_knowledge(question: str, requested_module: str) -> tuple[dict | None, i
             else:
                 score += len(tokens.intersection(keyword_tokens))
         if requested_module != "All" and requested_module in item["module"]:
-            score += 2
+            score += 1
         if score > best_score:
             best_item, best_score = item, score
-    return (best_item, best_score) if best_score >= 2 else (None, best_score)
+    return (best_item, best_score) if best_score >= 3 else (None, best_score)
 
 
 def create_answer(question: str, context: dict) -> dict:
@@ -355,29 +379,37 @@ def create_answer(question: str, context: dict) -> dict:
         web_summary = fetch_web_answer(question, context["module"])
         if web_summary:
             relevance = score_web_relevance(question, web_summary)
-            answer = (
-                f"{web_summary.strip()} For this SAP context, validate the recommendation against your product, release, and control design before using it in production."
+            question_lower = (question or "").lower()
+            text_lower = (web_summary or "").lower()
+            has_domain_match = (
+                ("s4hana" in question_lower and ("s/4hana" in text_lower or "s4hana" in text_lower or "hana" in text_lower))
+                or ("sap fico" in question_lower and ("sap fico" in text_lower or "fico" in text_lower or "financial accounting" in text_lower or "controlling" in text_lower))
+                or ("fico" in question_lower and ("fico" in text_lower or "financial accounting" in text_lower))
             )
-            return {
-                "matched": False,
-                "topic": "General web answer",
-                "module": context["module"],
-                "confidence": min(88, 52 + relevance * 8),
-                "answer": answer,
-                "steps": [
-                    "Review the general recommendation in the context of your SAP process and transaction flow.",
-                    "Confirm the exact product, release, and scope before applying any design change.",
-                    "Validate the final approach in a non-production system with business and controls owners.",
-                ],
-                "transactions": [],
-                "source": "General web answer",
-                "notice": "This is a general web answer from public sources and not a confirmed SAP configuration decision.",
-                "followups": [
-                    "Which transaction code or SAP app are you using?",
-                    "What exact error message or business outcome are you seeing?",
-                    "Is this in ECC or S/4HANA and what is the release?",
-                ],
-            }
+            if relevance >= 1 or has_domain_match or len((question or "").split()) >= 4:
+                answer = (
+                    f"{web_summary.strip()} For this SAP context, validate the recommendation against your product, release, and control design before using it in production."
+                )
+                return {
+                    "matched": False,
+                    "topic": "General web answer",
+                    "module": context["module"],
+                    "confidence": min(88, 52 + relevance * 8 + (18 if has_domain_match else 0)),
+                    "answer": answer,
+                    "steps": [
+                        "Review the general recommendation in the context of your SAP process and transaction flow.",
+                        "Confirm the exact product, release, and scope before applying any design change.",
+                        "Validate the final approach in a non-production system with business and controls owners.",
+                    ],
+                    "transactions": [],
+                    "source": "General web answer",
+                    "notice": "This is a general web answer from public sources and not a confirmed SAP configuration decision.",
+                    "followups": [
+                        "Which transaction code or SAP app are you using?",
+                        "What exact error message or business outcome are you seeing?",
+                        "Is this in ECC or S/4HANA and what is the release?",
+                    ],
+                }
         return {
             "matched": False,
             "topic": "Needs clarification",
