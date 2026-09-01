@@ -345,7 +345,9 @@ document.addEventListener("DOMContentLoaded", () => {
   $$("[data-question]").forEach(button => button.addEventListener("click", () => { $("#question").value = button.dataset.question; updateCount(); $("#question").focus(); }));
   $("#askAnotherQuestion").addEventListener("click", () => {
     clearQuestionComposer();
-    $("#answerCard").scrollIntoView({ behavior: "smooth", block: "start" });
+    const input = $("#question");
+    input.scrollIntoView({ behavior: "smooth", block: "center" });
+    input.focus({ preventScroll: true });
   });
   $$(".feedback-button").forEach(button => button.addEventListener("click", () => sendFeedback(button.dataset.rating, button)));
   $("#historySearch").addEventListener("input", renderHistory);

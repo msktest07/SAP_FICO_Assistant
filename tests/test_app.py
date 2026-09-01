@@ -16,11 +16,14 @@ class KnowledgeTests(unittest.TestCase):
         self.assertEqual(result["topic"], "Accounts Payable")
         self.assertIn("F110", result["transactions"])
 
-    def test_unknown_question_does_not_guess(self):
+    @patch.object(app, "fetch_web_answer", return_value="A general web summary explains the concept and recommends validating assumptions against the system context.")
+    def test_unknown_question_uses_dynamic_fallback(self, mock_web_answer):
         context = {"module": "All", "product": "SAP S/4HANA", "release": "Current", "country": "Global"}
         result = app.create_answer("Explain quantum networking hardware", context)
         self.assertFalse(result["matched"])
-        self.assertIn("could not find enough", result["answer"])
+        self.assertEqual(result["source"], "Web-assisted fallback")
+        self.assertIn("general web summary", result["answer"]) 
+        mock_web_answer.assert_called_once_with("Explain quantum networking hardware", "All")
 
     def test_ecc_requires_ecc_release(self):
         context, errors = app.validate_question({"question": "Explain vendor payments", "module": "FI", "product": "SAP ECC", "release": "2023", "country": "Global"})

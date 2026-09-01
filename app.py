@@ -6,6 +6,8 @@ import json
 import mimetypes
 import re
 import sqlite3
+import urllib.parse
+import urllib.request
 import uuid
 from contextlib import closing
 from datetime import datetime, timezone
@@ -262,6 +264,35 @@ def normalize(value: str) -> list[str]:
     return re.findall(r"[a-z0-9./-]+", value.lower())
 
 
+def fetch_web_answer(question: str, module: str) -> str | None:
+    query = (question or "").strip()
+    if not query:
+        return None
+    encoded_query = urllib.parse.quote(query)
+    urls = [
+        f"https://api.duckduckgo.com/?q={encoded_query}&format=json&no_html=1&skip_disambig=1&kl=us-en",
+        f"https://api.duckduckgo.com/?q={encoded_query}&format=json&no_html=1&skip_disambig=1&ia=web",
+    ]
+    for url in urls:
+        try:
+            request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(request, timeout=7) as response:
+                data = json.loads(response.read().decode("utf-8", errors="ignore"))
+            if data.get("AbstractText"):
+                return data["AbstractText"].strip()
+            related = data.get("RelatedTopics") or []
+            for item in related:
+                if isinstance(item, dict):
+                    text = (item.get("Text") or "").strip()
+                    if text:
+                        return text
+                elif isinstance(item, str) and item.strip():
+                    return item.strip()
+        except Exception:
+            continue
+    return None
+
+
 def find_knowledge(question: str, requested_module: str) -> tuple[dict | None, int]:
     question_lower = question.lower()
     tokens = set(normalize(question))
@@ -286,6 +317,31 @@ def find_knowledge(question: str, requested_module: str) -> tuple[dict | None, i
 def create_answer(question: str, context: dict) -> dict:
     item, score = find_knowledge(question, context["module"])
     if not item:
+        web_summary = fetch_web_answer(question, context["module"])
+        if web_summary:
+            answer = (
+                f"{web_summary.strip()} For this SAP context, validate the recommendation against your product, release, and control design before using it in production."
+            )
+            return {
+                "matched": False,
+                "topic": "Web-assisted fallback",
+                "module": context["module"],
+                "confidence": 45,
+                "answer": answer,
+                "steps": [
+                    "Review the general recommendation in the context of your SAP process and transaction flow.",
+                    "Confirm the exact product, release, and scope before applying any design change.",
+                    "Validate the final approach in a non-production system with business and controls owners.",
+                ],
+                "transactions": [],
+                "source": "Web-assisted fallback",
+                "notice": "This is a general web-assisted answer and not a verified SAP configuration decision.",
+                "followups": [
+                    "Which transaction code or SAP app are you using?",
+                    "What exact error message or business outcome are you seeing?",
+                    "Is this in ECC or S/4HANA and what is the release?",
+                ],
+            }
         return {
             "matched": False,
             "topic": "Needs clarification",
