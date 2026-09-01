@@ -98,6 +98,13 @@ class ApiIntegrationTests(unittest.TestCase):
                 delete = self.client.delete("/api/conversations/c2")
                 self.assertEqual(delete.status_code, 200)
 
+    def test_database_uses_temp_storage_in_serverless_runtime(self):
+        from api import index as api_module
+        with patch.dict("os.environ", {"VERCEL": "1"}, clear=False):
+            path = api_module.resolve_database_path()
+            self.assertIn("Temp", str(path), msg=f"Expected a writable temp path, got {path}")
+            self.assertTrue(path.parent.exists(), msg=f"Temp parent does not exist: {path.parent}")
+
 
 if __name__ == "__main__":
     unittest.main()

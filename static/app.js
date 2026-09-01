@@ -16,11 +16,18 @@ async function api(path, options = {}) {
     ...options,
     headers: { "Content-Type": "application/json", ...(options.headers || {}) },
   });
-  let data;
-  try { data = await response.json(); } catch { data = { error: "The server returned an unreadable response." }; }
+
+  const text = await response.text();
+  let data = null;
+  if (text) {
+    try { data = JSON.parse(text); } catch {
+      throw new Error(`The server returned an unreadable response: ${text.slice(0, 200)}`);
+    }
+  }
+
   if (!response.ok) {
-    const details = Array.isArray(data.details) ? ` ${data.details.join(" ")}` : "";
-    throw new Error(`${data.error || "Request failed."}${details}`);
+    const details = Array.isArray(data?.details) ? ` ${data.details.join(" ")}` : "";
+    throw new Error(`${data?.error || "Request failed."}${details}`);
   }
   return data;
 }

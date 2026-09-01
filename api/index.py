@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import sqlite3
 import uuid
 from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
+from tempfile import gettempdir
 from typing import Tuple
 
 from flask import Flask, jsonify, request, send_from_directory, abort
@@ -14,7 +16,15 @@ from flask import Flask, jsonify, request, send_from_directory, abort
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = ROOT / "static"
-DATABASE = ROOT / "sap_fico.db"
+
+
+def resolve_database_path() -> Path:
+    if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        return Path(gettempdir()) / "sap_fico.db"
+    return ROOT / "sap_fico.db"
+
+
+DATABASE = resolve_database_path()
 
 app = Flask(__name__, static_folder=str(STATIC_DIR), static_url_path="")
 
@@ -42,6 +52,7 @@ def connect() -> sqlite3.Connection:
 
 
 def initialize_database() -> None:
+    DATABASE.parent.mkdir(parents=True, exist_ok=True)
     with closing(connect()) as db:
         db.executescript(
             """
