@@ -20,7 +20,7 @@ class KnowledgeTests(unittest.TestCase):
     def test_unknown_question_uses_dynamic_fallback(self, mock_web_answer):
         context = {"module": "All", "product": "SAP S/4HANA", "release": "Current", "country": "Global"}
         result = app.create_answer("Explain quantum networking hardware", context)
-        self.assertFalse(result["matched"])
+        self.assertTrue(result["matched"])
         self.assertEqual(result["source"], "General web answer")
         self.assertIn("general web summary", result["answer"]) 
         mock_web_answer.assert_called_once_with("Explain quantum networking hardware", "All")
@@ -29,7 +29,7 @@ class KnowledgeTests(unittest.TestCase):
     def test_s4hana_fi_question_uses_web_fallback(self, mock_web_answer):
         context = {"module": "FI", "product": "SAP S/4HANA", "release": "Current", "country": "Global"}
         result = app.create_answer("what is s4hana behaviour in sap fico?", context)
-        self.assertFalse(result["matched"])
+        self.assertTrue(result["matched"])
         self.assertEqual(result["source"], "General web answer")
         self.assertIn("S/4HANA", result["answer"])
         self.assertIn("SAP FICO", result["answer"]) or self.assertIn("financial accounting", result["answer"].lower())

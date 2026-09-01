@@ -217,7 +217,7 @@ def create_answer(question: str, context: dict) -> dict:
                     f"{web_summary.strip()} For this SAP context, validate the recommendation against your product, release, and control design before using it in production."
                 )
                 return {
-                    "matched": False,
+                    "matched": True,
                     "topic": "General web answer",
                     "module": context.get("module", "All"),
                     "confidence": min(88, 52 + relevance * 8 + (18 if has_domain_match else 0)),
