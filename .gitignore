@@ -3,3 +3,6 @@ __pycache__/
 sap_fico.db
 .pytest_cache/
 .DS_Store
+.vercel
+
+.vercel
