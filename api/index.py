@@ -18,7 +18,6 @@ DATABASE = ROOT / "sap_fico.db"
 
 app = Flask(__name__, static_folder=str(STATIC_DIR), static_url_path="")
 
-
 MAX_BODY_BYTES = 32_000
 
 
@@ -69,6 +68,9 @@ def initialize_database() -> None:
             );
             """
         )
+
+
+initialize_database()
 
 
 def normalize(value: str) -> list[str]:
@@ -235,10 +237,116 @@ def feedback():
     return jsonify({"message": "Thank you. Your feedback has been saved."}), 201
 
 
+@app.route("/api/dashboard")
+def dashboard():
+    with closing(connect()) as db:
+        total = db.execute("SELECT COUNT(*) AS count FROM conversations").fetchone()["count"]
+        helpful = db.execute("SELECT COUNT(*) AS count FROM feedback WHERE rating = 'helpful'").fetchone()["count"]
+        topics = [dict(row) for row in db.execute(
+            "SELECT topic, COUNT(*) AS count FROM conversations GROUP BY topic ORDER BY count DESC, topic LIMIT 5"
+        )]
+    return jsonify({"questions": total, "helpful": helpful, "knowledgeTopics": len(KNOWLEDGE), "topics": topics})
+
+
+@app.route("/api/conversations/<conversation_id>", methods=["GET"])
+def get_conversation(conversation_id: str):
+    with closing(connect()) as db:
+        row = db.execute(
+            """SELECT c.*, f.rating, f.comment AS feedback_comment
+               FROM conversations c
+               LEFT JOIN feedback f ON f.conversation_id = c.id
+               WHERE c.id = ?""",
+            (conversation_id,),
+        ).fetchone()
+    if not row:
+        return jsonify({"error": "Conversation not found."}), 404
+    return jsonify(dict(row))
+
+
+@app.route("/api/conversations/<conversation_id>", methods=["POST", "DELETE"])
+def update_or_delete_conversation(conversation_id: str):
+    payload = request.get_json(silent=True) or {}
+    if request.method == "DELETE":
+        with closing(connect()) as db:
+            exists = db.execute("SELECT 1 FROM conversations WHERE id = ?", (conversation_id,)).fetchone()
+            if not exists:
+                return jsonify({"error": "Conversation not found."}), 404
+            db.execute("DELETE FROM feedback WHERE conversation_id = ?", (conversation_id,))
+            db.execute("DELETE FROM conversations WHERE id = ?", (conversation_id,))
+            db.commit()
+        return jsonify({"message": "Conversation deleted."})
+
+    action = str(payload.get("action", "")).strip()
+    if action != "update":
+        return jsonify({"error": "Unsupported action."}), 422
+
+    question = str(payload.get("question", "")).strip()
+    if len(question) < 8 or len(question) > 1000:
+        return jsonify({"error": "Question must contain 8 to 1,000 characters."}), 422
+
+    module = str(payload.get("module", "")).strip()
+    product = str(payload.get("product", "")).strip()
+    release = str(payload.get("release", "")).strip()
+    country = str(payload.get("country", "")).strip()
+    context, errors = validate_question({
+        "question": question,
+        "module": module,
+        "product": product,
+        "release": release,
+        "country": country,
+    })
+    if errors:
+        return jsonify({"error": "Please correct the highlighted information.", "details": errors}), 422
+
+    result = create_answer(question, context)
+    with closing(connect()) as db:
+        exists = db.execute("SELECT 1 FROM conversations WHERE id = ?", (conversation_id,)).fetchone()
+        if not exists:
+            return jsonify({"error": "Conversation not found."}), 404
+        db.execute(
+            """UPDATE conversations
+               SET question = ?, answer = ?, topic = ?, module = ?, product = ?, release_name = ?, country = ?, confidence = ?
+               WHERE id = ?""",
+            (question, result["answer"], result["topic"], result["module"], product, release, country, result["confidence"], conversation_id),
+        )
+        db.commit()
+    result["id"] = conversation_id
+    return jsonify(result)
+
+
+@app.route("/api/feedback/<conversation_id>", methods=["PUT", "DELETE"])
+def update_or_delete_feedback(conversation_id: str):
+    payload = request.get_json(silent=True) or {}
+    if request.method == "DELETE":
+        with closing(connect()) as db:
+            db.execute("DELETE FROM feedback WHERE conversation_id = ?", (conversation_id,))
+            db.commit()
+        return jsonify({"message": "Feedback deleted."})
+
+    rating = str(payload.get("rating", "")).strip()
+    comment = str(payload.get("comment", "")).strip()
+    if rating not in {"helpful", "not_helpful"}:
+        return jsonify({"error": "A valid feedback rating is required."}), 422
+    if len(comment) > 500:
+        return jsonify({"error": "Feedback must not exceed 500 characters."}), 422
+
+    with closing(connect()) as db:
+        exists = db.execute("SELECT 1 FROM conversations WHERE id = ?", (conversation_id,)).fetchone()
+        if not exists:
+            return jsonify({"error": "Conversation not found."}), 404
+        db.execute(
+            """INSERT INTO feedback (conversation_id, rating, comment, created_at)
+               VALUES (?, ?, ?, ?)
+               ON CONFLICT(conversation_id) DO UPDATE SET rating=excluded.rating, comment=excluded.comment, created_at=excluded.created_at""",
+            (conversation_id, rating, comment, utc_now()),
+        )
+        db.commit()
+    return jsonify({"message": "Feedback updated."})
+
+
 @app.route("/")
 @app.route("/<path:relpath>")
 def serve(relpath: str = "index.html"):
-    # Serve static files from the static directory
     requested = relpath or "index.html"
     if (STATIC_DIR / requested).is_file():
         return send_from_directory(str(STATIC_DIR), requested)
