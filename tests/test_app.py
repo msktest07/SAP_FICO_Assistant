@@ -21,7 +21,7 @@ class KnowledgeTests(unittest.TestCase):
         context = {"module": "All", "product": "SAP S/4HANA", "release": "Current", "country": "Global"}
         result = app.create_answer("Explain quantum networking hardware", context)
         self.assertFalse(result["matched"])
-        self.assertEqual(result["source"], "Web-assisted fallback")
+        self.assertEqual(result["source"], "General web answer")
         self.assertIn("general web summary", result["answer"]) 
         mock_web_answer.assert_called_once_with("Explain quantum networking hardware", "All")
 

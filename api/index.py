@@ -90,6 +90,35 @@ def normalize(value: str) -> list[str]:
     return re.findall(r"[a-z0-9./-]+", value.lower())
 
 
+def summarize_web_text(text: str, max_chars: int = 360) -> str:
+    cleaned = re.sub(r"\s+", " ", (text or "")).strip()
+    if not cleaned:
+        return ""
+    if len(cleaned) <= max_chars:
+        return cleaned
+    fragments = re.split(r"(?<=[.!?])\s+", cleaned)
+    summary = ""
+    for fragment in fragments:
+        candidate = f"{summary} {fragment}".strip()
+        if len(candidate) <= max_chars:
+            summary = candidate
+        else:
+            break
+    if not summary:
+        summary = cleaned[: max_chars - 3].rstrip() + "..."
+    if summary and summary[-1] not in ".!?":
+        summary += "."
+    return summary
+
+
+def score_web_relevance(question: str, text: str) -> int:
+    q_tokens = set(normalize(question))
+    t_tokens = set(normalize(text))
+    if not q_tokens or not t_tokens:
+        return 0
+    return len(q_tokens.intersection(t_tokens))
+
+
 def fetch_web_answer(question: str, module: str) -> str | None:
     query = (question or "").strip()
     if not query:
@@ -104,16 +133,22 @@ def fetch_web_answer(question: str, module: str) -> str | None:
             request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
             with urllib.request.urlopen(request, timeout=7) as response:
                 data = json.loads(response.read().decode("utf-8", errors="ignore"))
-            if data.get("AbstractText"):
-                return data["AbstractText"].strip()
+            candidates = []
+            abstract_text = (data.get("AbstractText") or "").strip()
+            if abstract_text:
+                candidates.append(abstract_text)
             related = data.get("RelatedTopics") or []
             for item in related:
                 if isinstance(item, dict):
                     text = (item.get("Text") or "").strip()
                     if text:
-                        return text
+                        candidates.append(text)
                 elif isinstance(item, str) and item.strip():
-                    return item.strip()
+                    candidates.append(item.strip())
+            for candidate in candidates:
+                cleaned = summarize_web_text(candidate)
+                if score_web_relevance(question, cleaned) >= 2:
+                    return cleaned
         except Exception:
             continue
     return None
@@ -145,14 +180,15 @@ def create_answer(question: str, context: dict) -> dict:
     if not item:
         web_summary = fetch_web_answer(question, context.get("module", "All"))
         if web_summary:
+            relevance = score_web_relevance(question, web_summary)
             answer = (
                 f"{web_summary.strip()} For this SAP context, validate the recommendation against your product, release, and control design before using it in production."
             )
             return {
                 "matched": False,
-                "topic": "Web-assisted fallback",
+                "topic": "General web answer",
                 "module": context.get("module", "All"),
-                "confidence": 45,
+                "confidence": min(88, 52 + relevance * 8),
                 "answer": answer,
                 "steps": [
                     "Review the general recommendation in the context of your SAP process and transaction flow.",
@@ -160,8 +196,8 @@ def create_answer(question: str, context: dict) -> dict:
                     "Validate the final approach in a non-production system with business and controls owners.",
                 ],
                 "transactions": [],
-                "source": "Web-assisted fallback",
-                "notice": "This is a general web-assisted answer and not a verified SAP configuration decision.",
+                "source": "General web answer",
+                "notice": "This is a general web answer from public sources and not a confirmed SAP configuration decision.",
                 "followups": [
                     "Which transaction code or SAP app are you using?",
                     "What exact error message or business outcome are you seeing?",
