@@ -67,6 +67,15 @@ function syncProductRelease(productId = "#product", releaseId = "#release") {
   else if (release.value === "ECC 6.0") release.value = "Current";
 }
 
+function clearQuestionComposer() {
+  const question = $("#question");
+  question.value = "";
+  question.classList.remove("invalid");
+  $("#questionError").textContent = "";
+  updateCount();
+  question.focus();
+}
+
 async function askQuestion(event) {
   event.preventDefault();
   if (!validateQuestion()) return;
@@ -77,6 +86,7 @@ async function askQuestion(event) {
   try {
     const result = await api("/api/ask", { method: "POST", body: JSON.stringify(payload) });
     renderAnswer(result);
+    clearQuestionComposer();
     showToast(result.matched ? "Answer generated and saved to history." : "More information is needed for a reliable answer.", result.matched ? "success" : "error");
   } catch (error) {
     showToast(error.message, "error");
