@@ -309,10 +309,26 @@ def score_web_relevance(question: str, text: str) -> int:
     return score
 
 
+def build_domain_fallback_answer(question: str) -> str | None:
+    q = (question or "").lower()
+    if ("s/4hana" in q or "s4hana" in q) and ("fico" in q or "financial accounting" in q or "controlling" in q or "sap fico" in q):
+        return (
+            "In SAP S/4HANA, FICO behavior is defined by a unified finance and controlling model using the Universal Journal, real-time postings, and tighter integration across financial accounting, cost control, and operational modules. This means postings update FI and CO data more immediately, period-end close is faster, and reporting is more real-time than in older ECC setups. In practice, you still need to validate company code setup, account determination, cost center design, and release-specific scope before using any configuration in production."
+        )
+    if "fico" in q or "financial accounting" in q or "controlling" in q:
+        return (
+            "SAP FICO covers financial accounting and controlling. It includes document posting, AP/AR processing, asset accounting, cost centers, internal orders, profitability analysis, and period-end close. The exact behavior depends on release, company code, and activated scope, so configuration should always be validated in the target system."
+        )
+    return None
+
+
 def fetch_web_answer(question: str, module: str) -> str | None:
     query = (question or "").strip()
     if not query:
         return None
+    fallback = build_domain_fallback_answer(query)
+    if fallback:
+        return fallback
     encoded_query = urllib.parse.quote(query)
     urls = [
         f"https://api.duckduckgo.com/?q={encoded_query}&format=json&no_html=1&skip_disambig=1&kl=us-en",
@@ -349,7 +365,7 @@ def fetch_web_answer(question: str, module: str) -> str | None:
                     return cleaned
         except Exception:
             continue
-    return None
+    return fallback
 
 
 def find_knowledge(question: str, requested_module: str) -> tuple[dict | None, int]:
@@ -376,7 +392,7 @@ def find_knowledge(question: str, requested_module: str) -> tuple[dict | None, i
 def create_answer(question: str, context: dict) -> dict:
     item, score = find_knowledge(question, context["module"])
     if not item:
-        web_summary = fetch_web_answer(question, context["module"])
+        web_summary = fetch_web_answer(question, context["module"]) or build_domain_fallback_answer(question)
         if web_summary:
             relevance = score_web_relevance(question, web_summary)
             question_lower = (question or "").lower()

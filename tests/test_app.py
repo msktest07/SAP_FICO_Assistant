@@ -35,6 +35,16 @@ class KnowledgeTests(unittest.TestCase):
         self.assertIn("SAP FICO", result["answer"]) or self.assertIn("financial accounting", result["answer"].lower())
         mock_web_answer.assert_called_once_with("what is s4hana behaviour in sap fico?", "FI")
 
+    @patch.object(app, "fetch_web_answer", return_value=None)
+    def test_s4hana_fi_question_falls_back_to_domain_answer_when_web_is_unavailable(self, mock_web_answer):
+        context = {"module": "FI", "product": "SAP S/4HANA", "release": "Current", "country": "Global"}
+        result = app.create_answer("what is s4hana behaviour in sap fico?", context)
+        self.assertTrue(result["matched"])
+        self.assertEqual(result["source"], "General web answer")
+        self.assertIn("S/4HANA", result["answer"])
+        self.assertIn("Universal Journal", result["answer"]) or self.assertIn("real-time", result["answer"].lower())
+        mock_web_answer.assert_called_once_with("what is s4hana behaviour in sap fico?", "FI")
+
     def test_ecc_requires_ecc_release(self):
         context, errors = app.validate_question({"question": "Explain vendor payments", "module": "FI", "product": "SAP ECC", "release": "2023", "country": "Global"})
         self.assertIsNone(context)
