@@ -1,9 +1,9 @@
-# SAP_FICO_ASSISTANT
+# SAP FICO Assistant
 
 Project Name
 ------------
 
-SAP_FICO_ASSISTANT (SAP FICO Assistant)
+SAP FICO Assistant
 
 Project Description
 -------------------
