@@ -69,9 +69,16 @@ function syncProductRelease(productId = "#product", releaseId = "#release") {
 
 function clearQuestionComposer() {
   const question = $("#question");
+  const wrap = document.querySelector(".question-wrap");
   question.value = "";
   question.classList.remove("invalid");
   $("#questionError").textContent = "";
+  if (wrap) {
+    wrap.classList.remove("empty-reset");
+    void wrap.offsetWidth;
+    wrap.classList.add("empty-reset");
+    setTimeout(() => wrap.classList.remove("empty-reset"), 380);
+  }
   updateCount();
   question.focus();
 }
@@ -328,8 +335,18 @@ document.addEventListener("DOMContentLoaded", () => {
   $$("[data-route]").forEach(item => item.addEventListener("click", event => { event.preventDefault(); navigate(item.dataset.route); }));
   $("#questionForm").addEventListener("submit", askQuestion);
   $("#question").addEventListener("input", updateCount);
+  $("#question").addEventListener("keydown", (event) => {
+    if ((event.key === "Enter" && !event.shiftKey) || ((event.ctrlKey || event.metaKey) && event.key === "Enter")) {
+      event.preventDefault();
+      $("#questionForm").requestSubmit();
+    }
+  });
   $("#product").addEventListener("change", syncProductRelease);
   $$("[data-question]").forEach(button => button.addEventListener("click", () => { $("#question").value = button.dataset.question; updateCount(); $("#question").focus(); }));
+  $("#askAnotherQuestion").addEventListener("click", () => {
+    clearQuestionComposer();
+    $("#answerCard").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
   $$(".feedback-button").forEach(button => button.addEventListener("click", () => sendFeedback(button.dataset.rating, button)));
   $("#historySearch").addEventListener("input", renderHistory);
   $("#historyModule").addEventListener("change", renderHistory);
