@@ -60,6 +60,7 @@ def initialize_database() -> None:
             """
             CREATE TABLE IF NOT EXISTS conversations (
                 id TEXT PRIMARY KEY,
+                session_id TEXT NOT NULL DEFAULT '',
                 question TEXT NOT NULL,
                 answer TEXT NOT NULL,
                 topic TEXT NOT NULL,
@@ -81,6 +82,11 @@ def initialize_database() -> None:
             );
             """
         )
+        # Add session_id column if upgrading from older schema
+        try:
+            db.execute("ALTER TABLE conversations ADD COLUMN session_id TEXT NOT NULL DEFAULT ''")
+        except Exception:
+            pass
 
 
 initialize_database()
@@ -145,6 +151,38 @@ def build_domain_fallback_answer(question: str) -> str | None:
         return (
             "SAP FICO covers financial accounting and controlling. It includes document posting, AP/AR processing, asset accounting, cost centers, internal orders, profitability analysis, and period-end close. The exact behavior depends on release, company code, and activated scope, so configuration should always be validated in the target system."
         )
+    if "mm" in q or "materials management" in q or "procurement" in q or "purchase order" in q or "goods receipt" in q:
+        return (
+            "SAP Materials Management (MM) covers procurement, purchase orders, goods receipt, invoice verification, and inventory management. It integrates with FI for account posting and with CO for cost assignment. Key transactions include ME21N, MIGO, and MIRO. Configuration depends on purchasing organization, plant, and valuation area."
+        )
+    if "sd" in q or "sales" in q or "order to cash" in q or "delivery" in q or "billing" in q:
+        return (
+            "SAP Sales and Distribution (SD) covers the order-to-cash process including sales orders, deliveries, billing, and pricing. It integrates with FI for revenue posting and with MM for availability. Key transactions include VA01, VL01N, and VF01. Configuration depends on sales organization, distribution channel, and division."
+        )
+    if "pp" in q or "production" in q or "bom" in q or "routing" in q or "mrp" in q:
+        return (
+            "SAP Production Planning (PP) manages BOMs, routings, work centers, MRP runs, and production orders. It integrates with MM for material supply and with CO for order settlement. Key transactions include CS01, CA01, MD01, and CO01. Configuration depends on plant, MRP type, and lot-sizing procedure."
+        )
+    if "pm" in q or "plant maintenance" in q or "maintenance order" in q or "equipment" in q:
+        return (
+            "SAP Plant Maintenance (PM) manages equipment maintenance through notifications, work orders, and preventive maintenance schedules. It integrates with CO for cost settlement and with MM for spare parts. Key transactions include IW31, IW38, and IE01. Configuration depends on maintenance plant, planner group, and catalog."
+        )
+    if "qm" in q or "quality" in q or "inspection" in q or "usage decision" in q:
+        return (
+            "SAP Quality Management (QM) covers inspection planning, lot processing, results recording, and usage decisions. It integrates with MM for procurement inspection and with PP for in-process inspection. Key transactions include QA32 and QE01. Configuration depends on inspection type, sampling procedure, and catalog codes."
+        )
+    if "hr" in q or "hcm" in q or "human resources" in q or "payroll" in q or "personnel" in q:
+        return (
+            "SAP Human Capital Management (HR/HCM) covers personnel administration, organizational management, time management, and payroll processing. It integrates with FI for cost posting and with CO for cost center assignment. Key transactions include PA30 and PT60. Configuration depends on personnel area, employee group, and payroll area."
+        )
+    if "wm" in q or "ewm" in q or "warehouse" in q or "picking" in q or "putaway" in q:
+        return (
+            "SAP Warehouse Management (WM/EWM) handles storage bin management, putaway strategies, picking, transfer orders, and inventory tracking at bin level. It integrates with MM for goods movements and with SD for delivery picking. Key transactions include LT01, LT21, and LS26. Configuration depends on warehouse number, storage type, and movement type."
+        )
+    if "ps" in q or "project system" in q or "wbs" in q or "project" in q:
+        return (
+            "SAP Project System (PS) manages projects through WBS elements, network activities, milestones, and settlement rules. It integrates with FI for budget posting, CO for cost tracking, MM for procurement, and SD for billing. Key transactions include CJ20N and CNS41. Configuration depends on project profile, WBS element types, and settlement rules."
+        )
     return None
 
 
@@ -194,6 +232,33 @@ def fetch_web_answer(question: str, module: str) -> str | None:
     return fallback
 
 
+def resolve_question_with_context(question: str, history: list | None = None) -> str:
+    """Resolve follow-up questions using conversation context."""
+    if not history:
+        return question
+    q_lower = question.lower().strip()
+    followup_indicators = [
+        "what about", "how about", "and in", "can you also", "tell me more",
+        "more on", "go deeper", "explain further",
+        "in that case", "then what", "so how", "does that mean", "is that the same",
+        "what if i", "compared to", "versus", "vs", "instead of",
+    ]
+    pronouns = ["it", "that", "this", "those", "these", "they", "them", "the same"]
+    is_followup = (
+        any(q_lower.startswith(ind) for ind in followup_indicators)
+        or any(q_lower.startswith(p + " ") for p in pronouns)
+    )
+    if not is_followup:
+        return question
+    recent = history[-20:]
+    context_parts = []
+    for entry in recent[-5:]:
+        context_parts.append(f"Previous Q: {entry.get('question', '')}")
+        context_parts.append(f"Previous A: {entry.get('answer', '')[:200]}")
+    context_block = " ".join(context_parts)
+    return f"[Context: {context_block}] {question}"
+
+
 def find_knowledge(question: str, requested_module: str) -> Tuple[dict | None, int]:
     question_lower = question.lower()
     tokens = set(normalize(question))
@@ -215,8 +280,9 @@ def find_knowledge(question: str, requested_module: str) -> Tuple[dict | None, i
     return (best_item, best_score) if best_score >= 3 else (None, best_score)
 
 
-def create_answer(question: str, context: dict) -> dict:
-    item, score = find_knowledge(question, context.get("module", "All"))
+def create_answer(question: str, context: dict, history: list | None = None) -> dict:
+    resolved_question = resolve_question_with_context(question, history)
+    item, score = find_knowledge(resolved_question, context.get("module", "All"))
     if not item:
         web_summary = fetch_web_answer(question, context.get("module", "All")) or build_domain_fallback_answer(question)
         if web_summary:
@@ -293,7 +359,7 @@ def validate_question(payload: dict) -> Tuple[dict | None, list[str]]:
         errors.append("Question must not exceed 1,000 characters.")
 
     allowed = {
-        "module": {"All", "FI", "CO", "FI/CO"},
+        "module": {"All", "FI", "CO", "FI/CO", "FI-AA", "MM", "SD", "PP", "PM", "QM", "HR", "WM", "PS"},
         "product": {"SAP S/4HANA", "SAP ECC"},
         "release": {"Current", "2023", "2022", "1909", "ECC 6.0"},
         "country": {"Global", "India", "United States", "United Kingdom", "Germany"},
@@ -339,15 +405,24 @@ def ask():
     context, errors = validate_question(payload)
     if errors:
         return jsonify({"error": "Please correct the highlighted information.", "details": errors}), 422
-    result = create_answer(context["question"], context)
+    session_id = str(payload.get("sessionId", "")).strip() or str(uuid.uuid4())
+    history = []
+    with closing(connect()) as db:
+        rows = db.execute(
+            "SELECT question, answer, topic, module FROM conversations WHERE session_id = ? ORDER BY created_at DESC LIMIT 20",
+            (session_id,),
+        ).fetchall()
+        history = [dict(r) for r in reversed(rows)]
+    result = create_answer(context["question"], context, history)
     conversation_id = str(uuid.uuid4())
     with closing(connect()) as db:
         db.execute(
             """INSERT INTO conversations
-               (id, question, answer, topic, module, product, release_name, country, confidence, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               (id, session_id, question, answer, topic, module, product, release_name, country, confidence, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 conversation_id,
+                session_id,
                 context["question"],
                 result["answer"],
                 result["topic"],
@@ -361,6 +436,7 @@ def ask():
         )
         db.commit()
     result["id"] = conversation_id
+    result["sessionId"] = session_id
     return jsonify(result), 201
 
 

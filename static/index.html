@@ -54,7 +54,7 @@
             </div>
             <p class="field-error" id="questionError" role="alert"></p>
             <div class="context-grid">
-              <label>Module<select id="module" name="module"><option>All</option><option>FI</option><option>CO</option><option>FI/CO</option></select></label>
+              <label>Module<select id="module" name="module"><option>All</option><option>FI</option><option>CO</option><option>FI/CO</option><option>FI-AA</option><option>MM</option><option>SD</option><option>PP</option><option>PM</option><option>QM</option><option>HR</option><option>WM</option><option>PS</option></select></label>
               <label>Product<select id="product" name="product"><option>SAP S/4HANA</option><option>SAP ECC</option></select></label>
               <label>Release<select id="release" name="release"><option>Current</option><option>2023</option><option>2022</option><option>1909</option><option>ECC 6.0</option></select></label>
               <label>Country<select id="country" name="country"><option>Global</option><option>India</option><option>United States</option><option>United Kingdom</option><option>Germany</option></select></label>
@@ -69,6 +69,8 @@
               <button data-question="How do I perform cost center assessment and review the results?">Cost allocation</button>
               <button data-question="What activities are required for FI and CO month-end closing?">Month-end close</button>
               <button data-question="How does MM account determination integrate with FI and CO?">FI/MM integration</button>
+              <button data-question="What are the key steps in the SD order-to-cash process?">Order-to-cash</button>
+              <button data-question="Explain the PP production order lifecycle from creation to settlement">Production orders</button>
             </div>
           </div>
 
@@ -95,7 +97,7 @@
 
         <section class="view" id="historyView" data-view="history">
           <div class="section-heading"><div><p class="eyebrow">Saved automatically</p><h2>Question history</h2><p>Review your recent SAP FICO questions and their context.</p></div><button class="secondary-button" id="refreshHistory">↻ Refresh</button></div>
-          <div class="filter-row"><input id="historySearch" type="search" placeholder="Search questions or topics..." aria-label="Search history"><select id="historyModule" aria-label="Filter by module"><option value="">All modules</option><option>FI</option><option>CO</option><option>FI/CO</option><option>FI-AA</option></select></div>
+          <div class="filter-row"><input id="historySearch" type="search" placeholder="Search questions or topics..." aria-label="Search history"><select id="historyModule" aria-label="Filter by module"><option value="">All modules</option><option>FI</option><option>CO</option><option>FI/CO</option><option>FI-AA</option><option>MM</option><option>SD</option><option>PP</option><option>PM</option><option>QM</option><option>HR</option><option>WM</option><option>PS</option></select></div>
           <div class="data-card">
             <div class="table-wrap">
               <table>

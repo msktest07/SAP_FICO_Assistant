@@ -50,6 +50,54 @@ class KnowledgeTests(unittest.TestCase):
         self.assertIsNone(context)
         self.assertTrue(any("ECC 6.0" in error for error in errors))
 
+    def test_mm_procurement_matches_knowledge(self):
+        context = {"module": "MM", "product": "SAP S/4HANA", "release": "Current", "country": "Global"}
+        result = app.create_answer("How do I create a purchase order in ME21N?", context)
+        self.assertTrue(result["matched"])
+        self.assertEqual(result["module"], "MM")
+
+    def test_sd_order_to_cash_matches_knowledge(self):
+        context = {"module": "SD", "product": "SAP S/4HANA", "release": "Current", "country": "Global"}
+        result = app.create_answer("What are the steps in the sales order to cash process?", context)
+        self.assertTrue(result["matched"])
+        self.assertEqual(result["module"], "SD")
+
+    def test_pp_production_matches_knowledge(self):
+        context = {"module": "PP", "product": "SAP S/4HANA", "release": "Current", "country": "Global"}
+        result = app.create_answer("Explain the production order lifecycle and MRP process", context)
+        self.assertTrue(result["matched"])
+        self.assertEqual(result["module"], "PP")
+
+    def test_context_resolution_resolves_followup(self):
+        history = [
+            {"question": "How do I post a GL document in FB50?", "answer": "General Ledger posting records a balanced accounting document.", "topic": "General Ledger", "module": "FI"},
+        ]
+        resolved = app.resolve_question_with_context("What about in S/4HANA?", history)
+        self.assertIn("[Context:", resolved)
+        self.assertIn("GL document", resolved)
+
+    def test_context_resolution_returns_original_for_standalone(self):
+        history = [
+            {"question": "How do I post a GL document in FB50?", "answer": "General Ledger posting records a balanced accounting document.", "topic": "General Ledger", "module": "FI"},
+        ]
+        resolved = app.resolve_question_with_context("How do I create a purchase order in ME21N?", history)
+        self.assertEqual(resolved, "How do I create a purchase order in ME21N?")
+
+    def test_mm_domain_fallback(self):
+        result = app.build_domain_fallback_answer("how does procurement work in SAP MM?")
+        self.assertIsNotNone(result)
+        self.assertIn("MM", result)
+
+    def test_sd_domain_fallback(self):
+        result = app.build_domain_fallback_answer("explain the sales order process in SD")
+        self.assertIsNotNone(result)
+        self.assertIn("SD", result)
+
+    def test_new_modules_accepted_in_validation(self):
+        context, errors = app.validate_question({"question": "How does procurement work?", "module": "MM", "product": "SAP S/4HANA", "release": "Current", "country": "Global"})
+        self.assertIsNotNone(context)
+        self.assertEqual(len(errors), 0)
+
     def test_short_question_is_rejected(self):
         context, errors = app.validate_question({"question": "GL?", "module": "FI", "product": "SAP S/4HANA", "release": "Current", "country": "Global"})
         self.assertIsNone(context)

@@ -218,7 +218,199 @@ KNOWLEDGE = [
         "transactions": ["KO22", "KO24", "FMBB", "FMAVCR01"],
         "source": "Curated SAP CO knowledge: Budget control",
     },
+    {
+        "id": "mm-procurement",
+        "topic": "Materials Management Procurement",
+        "module": "MM",
+        "keywords": ["materials management", "mm", "procurement", "purchase order", "po", "me21n", "me23n", "goods receipt", "migo", "vendor evaluation", "purchasing", "source determination"],
+        "summary": "Materials Management procurement covers the end-to-end purchase-to-pay process from purchase requisition through purchase order, goods receipt, invoice verification, and payment integration with FI.",
+        "steps": [
+            "Create or validate the purchase requisition with correct material, quantity, delivery date, and account assignment.",
+            "Convert the requisition to a purchase order, confirm vendor, pricing, terms, and delivery schedule.",
+            "Perform goods receipt against the PO, verify quantities, and post the material document with movement type 101.",
+            "Execute invoice verification in MIRO, match PO, goods receipt, and invoice quantities and values.",
+            "Reconcile GR/IR clearing account and resolve any blocked invoices or price differences.",
+        ],
+        "transactions": ["ME21N", "ME23N", "MIGO", "MIRO"],
+        "source": "Curated SAP MM knowledge: Procurement process",
+    },
+    {
+        "id": "mm-inventory",
+        "topic": "Inventory Management",
+        "module": "MM",
+        "keywords": ["inventory", "stock", "warehouse", "material", "mb52", "mb1c", "transfer posting", "physical inventory", "goods movement", "valuation"],
+        "summary": "Inventory Management tracks material stocks by quantity and value, supporting goods movements, transfer postings, physical inventory counts, and material valuation integrated with FI.",
+        "steps": [
+            "Verify the material master, plant, storage location, and valuation class before any movement.",
+            "Post goods movements using the correct movement type and account assignment.",
+            "Run inventory reports to confirm stock quantities and values match FI balances.",
+            "Execute physical inventory counts, post differences, and reconcile with book inventory.",
+            "Review material valuation and price changes, and post revaluation if required.",
+        ],
+        "transactions": ["MB52", "MB1C", "MI01", "MIGO"],
+        "source": "Curated SAP MM knowledge: Inventory management",
+    },
+    {
+        "id": "sd-order-to-cash",
+        "topic": "Sales Order-to-Cash",
+        "module": "SD",
+        "keywords": ["sales", "sd", "order to cash", "sales order", "va01", "delivery", "billing", "pricing", "customer", "shipment", "revenue"],
+        "summary": "The Sales and Distribution order-to-cash process covers sales order creation, delivery, picking, goods issue, billing, and revenue recognition integrated with FI and CO.",
+        "steps": [
+            "Create the sales order with correct customer, material, quantity, pricing, and delivery dates.",
+            "Confirm availability, schedule delivery, and create the outbound delivery document.",
+            "Pick, pack, and post goods issue to update inventory and generate the FI cost of goods posting.",
+            "Create the billing document and release it to accounting for revenue recognition.",
+            "Reconcile the FI revenue posting with the SD billing document and clear the customer account.",
+        ],
+        "transactions": ["VA01", "VL01N", "VF01", "VF02"],
+        "source": "Curated SAP SD knowledge: Order-to-cash",
+    },
+    {
+        "id": "sd-pricing",
+        "topic": "SD Pricing and Conditions",
+        "module": "SD",
+        "keywords": ["pricing", "condition technique", "vk11", "vk12", "pricing procedure", "discount", "surcharge", "freight", "tax determination", "condition type"],
+        "summary": "SD pricing uses the condition technique to calculate prices, discounts, surcharges, and taxes on sales documents using pricing procedures, access sequences, and condition records.",
+        "steps": [
+            "Define the pricing procedure and assign it to the sales document type and customer pricing group.",
+            "Create condition records for prices, discounts, surcharges, and freight using the correct key combination.",
+            "Test the pricing analysis in a sales document to confirm condition values and calculation sequence.",
+            "Review pricing exclusion or condition exclusion flags if unexpected values appear.",
+            "Validate that FI account determination posts the correct revenue and tax accounts.",
+        ],
+        "transactions": ["VK11", "VK12", "V/08", "V/06"],
+        "source": "Curated SAP SD knowledge: Pricing and conditions",
+    },
+    {
+        "id": "pp-production",
+        "topic": "Production Planning",
+        "module": "PP",
+        "keywords": ["production planning", "pp", "bom", "routing", "work center", "production order", "mrp", "material requirements", "manufacturing", "capacity"],
+        "summary": "Production Planning manages bill of materials, routings, work centers, MRP runs, and production orders to convert demand into manufactured products.",
+        "steps": [
+            "Maintain the material master with MRP type, lot size, and planning parameters.",
+            "Create or validate the BOM and routing for the finished product.",
+            "Run MRP to generate planned orders or purchase requisitions based on demand and supply.",
+            "Convert planned orders to production orders, confirm capacity availability, and release.",
+            "Execute goods movements for components and confirm operations, then do order settlement to CO.",
+        ],
+        "transactions": ["CS01", "CA01", "MD01", "CO01"],
+        "source": "Curated SAP PP knowledge: Production planning",
+    },
+    {
+        "id": "pm-maintenance",
+        "topic": "Plant Maintenance",
+        "module": "PM",
+        "keywords": ["plant maintenance", "pm", "maintenance order", "work order", "equipment", "preventive maintenance", "iw31", "iw38", "breakdown", "corrective"],
+        "summary": "Plant Maintenance manages equipment maintenance through notification, planning, scheduling, and execution of corrective and preventive maintenance orders.",
+        "steps": [
+            "Create a maintenance notification with the equipment, malfunction description, and priority.",
+            "Plan the maintenance order with tasks, components, work centers, and estimated costs.",
+            "Schedule the order considering capacity, availability, and maintenance windows.",
+            "Execute the work, confirm time and material, and close the technical completion.",
+            "Settle maintenance costs to the correct cost center or asset and close the notification.",
+        ],
+        "transactions": ["IW31", "IW38", "IE01", "IP10"],
+        "source": "Curated SAP PM knowledge: Plant maintenance",
+    },
+    {
+        "id": "qm-quality",
+        "topic": "Quality Management",
+        "module": "QM",
+        "keywords": ["quality management", "qm", "inspection lot", "quality", "inspection", "qa32", "qe01", "usage decision", "defect", "notification"],
+        "summary": "Quality Management covers inspection planning, inspection lot processing, results recording, usage decisions, and quality certificates integrated with procurement and production.",
+        "steps": [
+            "Set up the inspection plan with characteristics, sampling procedure, and inspection method.",
+            "Create or trigger the inspection lot from procurement, production, or stock transfer.",
+            "Record inspection results against the lot characteristics and document any defects.",
+            "Make the usage decision to accept, reject, or post to stock with conditions.",
+            "Close the inspection lot and, if required, generate quality certificates for the customer.",
+        ],
+        "transactions": ["QA32", "QE01", "QAC3", "QC01"],
+        "source": "Curated SAP QM knowledge: Quality management",
+    },
+    {
+        "id": "hr-hcm",
+        "topic": "Human Capital Management",
+        "module": "HR",
+        "keywords": ["human resources", "hr", "hcm", "payroll", "personnel", "employee", "time management", "pa30", "organizational management", "personnel administration"],
+        "summary": "Human Capital Management covers personnel administration, organizational management, time management, payroll processing, and employee self-service integrated with FI for cost posting.",
+        "steps": [
+            "Maintain the organizational plan with positions, job descriptions, and reporting structures.",
+            "Create or update employee master data including personal details, contract, and compensation.",
+            "Record working time, absences, and attendances in Time Management.",
+            "Execute the payroll run, review remuneration statements, and post payroll results to FI.",
+            "Generate statutory and management reports and reconcile payroll postings with FI.",
+        ],
+        "transactions": ["PA30", "PA20", "PP01", "PT60"],
+        "source": "Curated SAP HR/HCM knowledge: Human capital management",
+    },
+    {
+        "id": "wm-warehouse",
+        "topic": "Warehouse Management",
+        "module": "WM",
+        "keywords": ["warehouse management", "wm", "ewm", "storage", "picking", "putaway", "transfer order", "lt01", "lt21", "bin", "stock removal"],
+        "summary": "Warehouse Management and Extended Warehouse Management handle storage bin management, putaway strategies, picking, transfer orders, and inventory tracking at bin level.",
+        "steps": [
+            "Configure the warehouse structure with storage types, sections, and bin coordinates.",
+            "Process inbound deliveries with putaway strategies based on storage type indicators.",
+            "Create transfer orders for picking and confirm stock movements at bin level.",
+            "Execute physical inventory at warehouse level and reconcile with IM stock.",
+            "Monitor warehouse activity reports and optimize bin assignments for throughput.",
+        ],
+        "transactions": ["LT01", "LT21", "LS26", "LX03"],
+        "source": "Curated SAP WM/EWM knowledge: Warehouse management",
+    },
+    {
+        "id": "ps-project",
+        "topic": "Project System",
+        "module": "PS",
+        "keywords": ["project system", "ps", "wbs", "network", "project", "cj20n", "cns41", "milestone", "billing plan", "settlement"],
+        "summary": "Project System manages projects through work breakdown structures, network activities, milestones, settlement rules, and integration with FI, CO, MM, and SD for budgeting and billing.",
+        "steps": [
+            "Create the project definition and structure the WBS elements with dates, budgets, and responsible persons.",
+            "Create networks with activities, relationships, and assign them to WBS elements.",
+            "Plan costs and revenues, distribute the budget, and activate availability control.",
+            "Execute project activities, post actual costs, confirm network operations, and track milestones.",
+            "Settle project costs to the appropriate receivers and close the project after final review.",
+        ],
+        "transactions": ["CJ20N", "CNS41", "CN21", "CJ02"],
+        "source": "Curated SAP PS knowledge: Project system",
+    },
 ]
+
+
+def resolve_question_with_context(question: str, history: list[dict] | None = None) -> str:
+    """Resolve follow-up questions using conversation context.
+
+    If the question contains pronouns or references to previous topics,
+    rewrite it to include the relevant context so the knowledge matcher
+    and web search can find the right answer.
+    """
+    if not history:
+        return question
+    q_lower = question.lower().strip()
+    followup_indicators = [
+        "what about", "how about", "and in", "can you also", "tell me more",
+        "more on", "go deeper", "explain further",
+        "in that case", "then what", "so how", "does that mean", "is that the same",
+        "what if i", "compared to", "versus", "vs", "instead of",
+    ]
+    pronouns = ["it", "that", "this", "those", "these", "they", "them", "the same"]
+    is_followup = (
+        any(q_lower.startswith(ind) for ind in followup_indicators)
+        or any(q_lower.startswith(p + " ") for p in pronouns)
+    )
+    if not is_followup:
+        return question
+    recent = history[-20:]
+    context_parts = []
+    for entry in recent[-5:]:
+        context_parts.append(f"Previous Q: {entry.get('question', '')}")
+        context_parts.append(f"Previous A: {entry.get('answer', '')[:200]}")
+    context_block = " ".join(context_parts)
+    return f"[Context: {context_block}] {question}"
 
 
 def utc_now() -> str:
@@ -258,6 +450,11 @@ def initialize_database() -> None:
             );
             """
         )
+        # Add session_id column if upgrading from older schema
+        try:
+            db.execute("ALTER TABLE conversations ADD COLUMN session_id TEXT NOT NULL DEFAULT ''")
+        except Exception:
+            pass
 
 
 def normalize(value: str) -> list[str]:
@@ -318,6 +515,38 @@ def build_domain_fallback_answer(question: str) -> str | None:
     if "fico" in q or "financial accounting" in q or "controlling" in q:
         return (
             "SAP FICO covers financial accounting and controlling. It includes document posting, AP/AR processing, asset accounting, cost centers, internal orders, profitability analysis, and period-end close. The exact behavior depends on release, company code, and activated scope, so configuration should always be validated in the target system."
+        )
+    if "mm" in q or "materials management" in q or "procurement" in q or "purchase order" in q or "goods receipt" in q:
+        return (
+            "SAP Materials Management (MM) covers procurement, purchase orders, goods receipt, invoice verification, and inventory management. It integrates with FI for account posting and with CO for cost assignment. Key transactions include ME21N, MIGO, and MIRO. Configuration depends on purchasing organization, plant, and valuation area."
+        )
+    if "sd" in q or "sales" in q or "order to cash" in q or "delivery" in q or "billing" in q:
+        return (
+            "SAP Sales and Distribution (SD) covers the order-to-cash process including sales orders, deliveries, billing, and pricing. It integrates with FI for revenue posting and with MM for availability. Key transactions include VA01, VL01N, and VF01. Configuration depends on sales organization, distribution channel, and division."
+        )
+    if "pp" in q or "production" in q or "bom" in q or "routing" in q or "mrp" in q:
+        return (
+            "SAP Production Planning (PP) manages BOMs, routings, work centers, MRP runs, and production orders. It integrates with MM for material supply and with CO for order settlement. Key transactions include CS01, CA01, MD01, and CO01. Configuration depends on plant, MRP type, and lot-sizing procedure."
+        )
+    if "pm" in q or "plant maintenance" in q or "maintenance order" in q or "equipment" in q:
+        return (
+            "SAP Plant Maintenance (PM) manages equipment maintenance through notifications, work orders, and preventive maintenance schedules. It integrates with CO for cost settlement and with MM for spare parts. Key transactions include IW31, IW38, and IE01. Configuration depends on maintenance plant, planner group, and catalog."
+        )
+    if "qm" in q or "quality" in q or "inspection" in q or "usage decision" in q:
+        return (
+            "SAP Quality Management (QM) covers inspection planning, lot processing, results recording, and usage decisions. It integrates with MM for procurement inspection and with PP for in-process inspection. Key transactions include QA32 and QE01. Configuration depends on inspection type, sampling procedure, and catalog codes."
+        )
+    if "hr" in q or "hcm" in q or "human resources" in q or "payroll" in q or "personnel" in q:
+        return (
+            "SAP Human Capital Management (HR/HCM) covers personnel administration, organizational management, time management, and payroll processing. It integrates with FI for cost posting and with CO for cost center assignment. Key transactions include PA30 and PT60. Configuration depends on personnel area, employee group, and payroll area."
+        )
+    if "wm" in q or "ewm" in q or "warehouse" in q or "picking" in q or "putaway" in q:
+        return (
+            "SAP Warehouse Management (WM/EWM) handles storage bin management, putaway strategies, picking, transfer orders, and inventory tracking at bin level. It integrates with MM for goods movements and with SD for delivery picking. Key transactions include LT01, LT21, and LS26. Configuration depends on warehouse number, storage type, and movement type."
+        )
+    if "ps" in q or "project system" in q or "wbs" in q or "project" in q:
+        return (
+            "SAP Project System (PS) manages projects through WBS elements, network activities, milestones, and settlement rules. It integrates with FI for budget posting, CO for cost tracking, MM for procurement, and SD for billing. Key transactions include CJ20N and CNS41. Configuration depends on project profile, WBS element types, and settlement rules."
         )
     return None
 
@@ -389,8 +618,9 @@ def find_knowledge(question: str, requested_module: str) -> tuple[dict | None, i
     return (best_item, best_score) if best_score >= 3 else (None, best_score)
 
 
-def create_answer(question: str, context: dict) -> dict:
-    item, score = find_knowledge(question, context["module"])
+def create_answer(question: str, context: dict, history: list[dict] | None = None) -> dict:
+    resolved_question = resolve_question_with_context(question, history)
+    item, score = find_knowledge(resolved_question, context["module"])
     if not item:
         web_summary = fetch_web_answer(question, context["module"]) or build_domain_fallback_answer(question)
         if web_summary:
@@ -480,7 +710,7 @@ def validate_question(payload: dict) -> tuple[dict | None, list[str]]:
         errors.append("Question must not exceed 1,000 characters.")
 
     allowed = {
-        "module": {"All", "FI", "CO", "FI/CO"},
+        "module": {"All", "FI", "CO", "FI/CO", "FI-AA", "MM", "SD", "PP", "PM", "QM", "HR", "WM", "PS"},
         "product": {"SAP S/4HANA", "SAP ECC"},
         "release": {"Current", "2023", "2022", "1909", "ECC 6.0"},
         "country": {"Global", "India", "United States", "United Kingdom", "Germany"},
@@ -600,15 +830,24 @@ class ApplicationHandler(BaseHTTPRequestHandler):
         if errors:
             self.send_json({"error": "Please correct the highlighted information.", "details": errors}, HTTPStatus.UNPROCESSABLE_ENTITY)
             return
-        result = create_answer(context["question"], context)
+        session_id = str(payload.get("sessionId", "")).strip() or str(uuid.uuid4())
+        history = []
+        with closing(connect()) as db:
+            rows = db.execute(
+                "SELECT question, answer, topic, module FROM conversations WHERE session_id = ? ORDER BY created_at DESC LIMIT 20",
+                (session_id,),
+            ).fetchall()
+            history = [dict(r) for r in reversed(rows)]
+        result = create_answer(context["question"], context, history)
         conversation_id = str(uuid.uuid4())
         with closing(connect()) as db:
             db.execute(
                 """INSERT INTO conversations
-                   (id, question, answer, topic, module, product, release_name, country, confidence, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   (id, session_id, question, answer, topic, module, product, release_name, country, confidence, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     conversation_id,
+                    session_id,
                     context["question"],
                     result["answer"],
                     result["topic"],
@@ -622,6 +861,7 @@ class ApplicationHandler(BaseHTTPRequestHandler):
             )
             db.commit()
         result["id"] = conversation_id
+        result["sessionId"] = session_id
         self.send_json(result, HTTPStatus.CREATED)
 
     def handle_feedback(self, payload: dict) -> None:

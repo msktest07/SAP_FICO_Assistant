@@ -1,4 +1,5 @@
-const state = { currentAnswerId: null, history: [], editId: null, feedbackId: null, toastTimer: null };
+const state = { currentAnswerId: null, history: [], editId: null, feedbackId: null, toastTimer: null, sessionId: localStorage.getItem("sap-fico-session-id") || crypto.randomUUID() };
+localStorage.setItem("sap-fico-session-id", state.sessionId);
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const titles = { assistant: "Ask the assistant", history: "Question history", topics: "Topic explorer", dashboard: "Quality dashboard" };
@@ -89,7 +90,7 @@ async function askQuestion(event) {
   const button = $("#askButton");
   button.disabled = true;
   button.querySelector("span").textContent = "Analyzing...";
-  const payload = { question: $("#question").value.trim(), module: $("#module").value, product: $("#product").value, release: $("#release").value, country: $("#country").value };
+  const payload = { question: $("#question").value.trim(), module: $("#module").value, product: $("#product").value, release: $("#release").value, country: $("#country").value, sessionId: state.sessionId };
   try {
     const result = await api("/api/ask", { method: "POST", body: JSON.stringify(payload) });
     renderAnswer(result);
